@@ -140,6 +140,7 @@
   <span class="gate-emoji">🎁</span>
   <div class="serif" style="font-size:21px;font-weight:700;margin-bottom:8px;">Сімейний вішліст</div>
   <p style="font-size:13px;color:#8A8A82;margin-bottom:16px;line-height:1.5;" id="gateText"></p>
+  <input id="nameInput" placeholder="Ваше ім'я" style="width:100%;margin-bottom:10px;" class="hidden" />
   <input id="familyCodeInput" placeholder="наприклад: ivanov-family" style="width:100%;margin-bottom:10px;" />
   <button class="btn" id="joinBtn" style="background:#2F4F4F;color:#fff;width:100%;padding:11px;font-size:14px;"></button>
 </div>
@@ -217,14 +218,18 @@ try {
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 const tgUser = tg?.initDataUnsafe?.user;
-const myName = (tgUser ? (tgUser.first_name + (tgUser.last_name ? " " + tgUser.last_name : "")) : localStorage.getItem("fw_name")) || "";
-if (!tgUser && myName) localStorage.setItem("fw_name", myName);
+let myName = (tgUser ? (tgUser.first_name + (tgUser.last_name ? " " + tgUser.last_name : "")) : localStorage.getItem("fw_name")) || "";
+if (!tgUser) {
+  document.getElementById("nameInput").classList.remove("hidden");
+  document.getElementById("nameInput").value = myName;
+}
 
 const I18N = {
   ru: {
     hTitle: "Наш семейный вишлист", hSub: "Добавляйте желания и исполняйте их друг для друга — за это дают очки и звания.",
     gateText: "Введите код семьи — свой личный пароль-комнату. Все, кто введёт тот же код, увидят общий список.",
     join: "Войти в семью",
+    namePh: "Ваше имя",
     tabList: "🎁 Желания", tabRating: "🏆 Рейтинг", tabReports: "📅 Отчёты",
     openFilter: "Открытые", doneFilter: "Исполненные", addWish: "+ Добавить", cancel: "Отмена",
     titlePh: "Что хочется?", notePh: "Детали (необязательно)", saveWish: "Сохранить",
@@ -256,6 +261,7 @@ const I18N = {
     hTitle: "Наш сімейний вішліст", hSub: "Додавайте бажання та виконуйте їх одне для одного — за це нараховують бали.",
     gateText: "Введіть код родини — свій пароль-кімнату. Усі, хто введе той самий код, побачать спільний список.",
     join: "Увійти",
+    namePh: "Ваше ім'я",
     tabList: "🎁 Бажання", tabRating: "🏆 Рейтинг", tabReports: "📅 Звіти",
     openFilter: "Відкриті", doneFilter: "Виконані", addWish: "+ Додати", cancel: "Скасувати",
     titlePh: "Чого хочеться?", notePh: "Деталі (необов'язково)", saveWish: "Зберегти",
@@ -338,6 +344,12 @@ function showToast(msg) {
 function joinFamily() {
   const code = document.getElementById("familyCodeInput").value.trim();
   if (!code) return;
+  if (!tgUser) {
+    const enteredName = document.getElementById("nameInput").value.trim();
+    if (!enteredName) { document.getElementById("nameInput").focus(); return; }
+    myName = enteredName;
+    localStorage.setItem("fw_name", myName);
+  }
   familyCode = code;
   localStorage.setItem("fw_family", code);
   document.getElementById("gate").classList.add("hidden");
@@ -430,6 +442,7 @@ function render() {
   document.getElementById("hTitle").textContent = t().hTitle;
   document.getElementById("hSub").textContent = t().hSub;
   document.getElementById("gateText").textContent = t().gateText;
+  document.getElementById("nameInput").placeholder = t().namePh;
   document.getElementById("joinBtn").textContent = t().join;
   document.getElementById("tabList").textContent = t().tabList;
   document.getElementById("tabRating").textContent = t().tabRating;
