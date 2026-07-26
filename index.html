@@ -379,6 +379,7 @@ async function addWish() {
   document.getElementById("fTitle").value = ""; document.getElementById("fNote").value = "";
   document.getElementById("addForm").classList.add("hidden");
   showToast(t().toastAdded);
+  render();
 }
 
 async function completeWish(id) {
