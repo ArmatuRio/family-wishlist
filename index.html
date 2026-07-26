@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="uk">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
@@ -8,83 +8,185 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap');
-  * { box-sizing: border-box; }
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap');
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { scrollbar-width: thin; scrollbar-color: #cbb98a transparent; }
   body {
-    margin: 0; padding: 12px;
+    margin: 0;
+    padding: clamp(10px, 3vw, 22px) clamp(10px, 3vw, 20px) calc(clamp(16px, 5vw, 28px) + env(safe-area-inset-bottom, 0px));
     font-family: 'Nunito', sans-serif;
-    background: var(--tg-theme-bg-color, #FBF8F0);
+    background: var(--tg-theme-bg-color, #FBF6EC);
+    background-image: radial-gradient(circle at 8% 0%, rgba(227,160,39,0.10), transparent 40%),
+                       radial-gradient(circle at 100% 20%, rgba(47,79,79,0.06), transparent 35%);
     color: var(--tg-theme-text-color, #2B3A3A);
+    -webkit-font-smoothing: antialiased;
+    animation: fadeIn .35s ease;
   }
-  .serif { font-family: 'Fraunces', serif; }
-  .btn { cursor: pointer; border: none; border-radius: 10px; font-weight: 700; font-family: inherit; font-size: 13px; padding: 8px 14px; }
-  .btn:active { transform: scale(0.97); }
-  .card { border-radius: 12px; padding: 12px 14px; }
+  #app { max-width: 640px; margin-left: auto; margin-right: auto; width: 100%; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px);} to { opacity: 1; transform: none;} }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-thumb { background: #d8c592; border-radius: 6px; }
+
+  .serif { font-family: 'Fraunces', serif; letter-spacing: -0.01em; }
+
+  .btn {
+    cursor: pointer; border: none; border-radius: 12px; font-weight: 700; font-family: inherit;
+    font-size: 13px; padding: 9px 16px; transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  }
+  .btn:active { transform: scale(0.95); }
+  .btn:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.10); }
+  .btn:disabled { opacity: .45; cursor: default; box-shadow: none; }
+
+  .card {
+    border-radius: 16px; padding: 13px 15px;
+    box-shadow: 0 1px 2px rgba(43,58,58,0.06), 0 4px 14px rgba(43,58,58,0.05);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .grid .card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(43,58,58,0.10); }
+
   .row { display: flex; align-items: center; }
-  input, textarea, select { font-family: inherit; font-size: 14px; border-radius: 8px; border: 1px solid #d8d2c0; padding: 8px 10px; }
-  #gate { max-width: 360px; margin: 40px auto; text-align: center; }
+
+  input, textarea, select {
+    font-family: inherit; font-size: 14px; border-radius: 10px; border: 1.5px solid #e3dcc4;
+    padding: 9px 12px; background: #fff; transition: border-color .15s ease, box-shadow .15s ease;
+    outline: none;
+  }
+  input:focus, textarea:focus, select:focus { border-color: #E3A027; box-shadow: 0 0 0 3px rgba(227,160,39,0.18); }
+
+  #gate {
+    max-width: 340px; margin: min(15vh, 90px) auto 0; text-align: center;
+    background: #fff; border-radius: 20px; padding: 28px 22px;
+    box-shadow: 0 8px 30px rgba(43,58,58,0.10); animation: floatUp .4s ease;
+  }
+  @keyframes floatUp { from { opacity: 0; transform: translateY(14px);} to { opacity: 1; transform: none;} }
+  #gate .gate-emoji { font-size: 40px; display: block; margin-bottom: 6px; filter: drop-shadow(0 3px 6px rgba(227,160,39,0.3)); }
+
   .hidden { display: none !important; }
-  .tabbar { display: flex; gap: 8px; border-bottom: 1px solid #EDE6D6; margin-bottom: 14px; }
-  .tab { background: transparent; padding: 8px 12px; color: #8A8A82; border-bottom: 2px solid transparent; font-size: 13px; }
-  .tab.active { color: #2F4F4F; border-bottom: 2px solid #E3A027; font-weight: 700; }
+
+  .tabbar {
+    display: flex; gap: 4px; margin-bottom: 16px;
+    background: #EFE7D6; border-radius: 14px; padding: 4px;
+  }
+  .tab {
+    flex: 1; background: transparent; padding: 9px 10px; color: #8A7F63; border: none;
+    border-radius: 10px; font-size: 13px; font-weight: 700; transition: background .18s ease, color .18s ease, box-shadow .18s ease;
+  }
+  .tab.active { color: #2F4F4F; background: #fff; box-shadow: 0 2px 6px rgba(43,58,58,0.12); }
+
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
-  .jarbar { height: 6px; background: rgba(0,0,0,0.08); border-radius: 4px; overflow: hidden; margin-top: 6px; }
-  .jarfill { height: 100%; }
-  .barrow { display:flex; align-items:center; gap:8px; font-size:12px; margin-bottom:6px; }
-  .bartrack { flex:1; height:14px; background:#EDE6D6; border-radius:6px; overflow:hidden; }
-  .barfill { height:100%; background:#2F4F4F; }
+
+  .jarbar { height: 7px; background: rgba(0,0,0,0.08); border-radius: 6px; overflow: hidden; margin-top: 6px; }
+  .jarfill { height: 100%; border-radius: 6px; transition: width .5s cubic-bezier(.22,1,.36,1); }
+
+  .barrow { display:flex; align-items:center; gap:8px; font-size:12px; margin-bottom:7px; }
+  .bartrack { flex:1; height:14px; background:#EDE6D6; border-radius:8px; overflow:hidden; }
+  .barfill { height:100%; background: linear-gradient(90deg, #2F4F4F, #3d6b64); border-radius:8px; transition: width .5s cubic-bezier(.22,1,.36,1); }
+
+  #toast {
+    position: sticky; top: 6px; z-index: 5;
+    animation: toastIn .25s cubic-bezier(.22,1,.36,1);
+    box-shadow: 0 6px 18px rgba(43,58,58,0.14);
+  }
+  @keyframes toastIn { from { opacity:0; transform: translateY(-8px);} to { opacity:1; transform:none;} }
+
+  #app > .card:first-child {
+    background: linear-gradient(135deg, #2F4F4F 0%, #274343 60%, #21393a 100%) !important;
+    box-shadow: 0 8px 24px rgba(43,58,58,0.28);
+    position: relative; overflow: hidden;
+  }
+  #app > .card:first-child::before {
+    content: ""; position: absolute; top: -40px; right: -30px; width: 140px; height: 140px;
+    background: radial-gradient(circle, rgba(227,160,39,0.22), transparent 70%); border-radius: 50%;
+  }
+
+  #wishGrid .card { border: 1px solid rgba(0,0,0,0.04); }
+  #emptyMsg { font-size: 13px; }
+
+  #hTitle { font-size: clamp(17px, 4.5vw, 21px); }
+  #hSub { font-size: clamp(12px, 3vw, 13px); }
+  .header-top { flex-wrap: wrap; row-gap: 8px; }
+  .header-btns { flex-wrap: wrap; }
+
+  /* Small phones */
+  @media (max-width: 360px) {
+    .card { padding: 11px 12px; border-radius: 14px; }
+    .btn { padding: 8px 12px; font-size: 12px; }
+    .grid { grid-template-columns: 1fr; }
+    .tab { font-size: 12px; padding: 8px 6px; }
+    #gate { padding: 22px 16px; }
+  }
+
+  /* Tablets / small desktop */
+  @media (min-width: 640px) {
+    body { padding-left: clamp(16px, 4vw, 32px); padding-right: clamp(16px, 4vw, 32px); }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+  }
+
+  /* Desktop */
+  @media (min-width: 900px) {
+    #app { max-width: 760px; }
+    .card { padding: 16px 18px; }
+    .btn { padding: 10px 18px; font-size: 14px; }
+    .btn:hover { transform: translateY(-1px); }
+    #hTitle { font-size: 23px; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+  }
 </style>
 </head>
 <body>
 
 <div id="gate">
-  <div class="serif" style="font-size:20px;font-weight:600;margin-bottom:8px;">🎁 Сімейний вішліст</div>
-  <p style="font-size:13px;color:#8A8A82;margin-bottom:14px;" id="gateText">
-    Введите код семьи — свой личный пароль-комнату. Все, кто введёт тот же код, увидят общий список.
-  </p>
-  <input id="familyCodeInput" placeholder="например: ivanov-family" style="width:100%;margin-bottom:8px;" />
-  <button class="btn" id="joinBtn" style="background:#2F4F4F;color:#fff;width:100%;">Войти в семью</button>
+  <span class="gate-emoji">🎁</span>
+  <div class="serif" style="font-size:21px;font-weight:700;margin-bottom:8px;">Сімейний вішліст</div>
+  <p style="font-size:13px;color:#8A8A82;margin-bottom:16px;line-height:1.5;" id="gateText"></p>
+  <input id="familyCodeInput" placeholder="наприклад: ivanov-family" style="width:100%;margin-bottom:10px;" />
+  <button class="btn" id="joinBtn" style="background:#2F4F4F;color:#fff;width:100%;padding:11px;font-size:14px;"></button>
 </div>
 
 <div id="app" class="hidden">
 
   <div class="card" style="background:#2F4F4F;color:#FBF8F0;margin-bottom:14px;">
-    <div class="row" style="justify-content:space-between;">
+    <div class="row header-top" style="justify-content:space-between;">
       <div class="row" style="gap:8px;">
         <span style="font-size:22px;">🎁</span>
-        <span class="serif" style="font-size:20px;font-weight:600;" id="hTitle">Наш семейный вишлист</span>
+        <span class="serif" style="font-size:20px;font-weight:600;" id="hTitle"></span>
       </div>
-      <button class="btn" id="langBtn" style="background:rgba(255,255,255,0.12);color:#FBF8F0;">🌐 UA</button>
+      <div class="row header-btns" style="gap:6px;">
+        <button class="btn" id="langBtn" style="background:rgba(255,255,255,0.12);color:#FBF8F0;"></button>
+        <button class="btn" id="logoutBtn" style="background:rgba(255,255,255,0.12);color:#FBF8F0;"></button>
+      </div>
     </div>
-    <p style="font-size:13px;opacity:0.85;margin:6px 0 0;" id="hSub">Добавляйте желания и исполняйте их друг для друга.</p>
+    <p style="font-size:13px;opacity:0.85;margin:6px 0 0;" id="hSub"></p>
     <div id="myProgress" style="margin-top:12px;background:rgba(255,255,255,0.08);border-radius:12px;padding:8px 12px;"></div>
+    <div id="adminBadge" style="font-size:11px;opacity:0.75;margin-top:6px;"></div>
   </div>
 
   <div id="toast" class="hidden card" style="background:#7FA98A;color:#173404;margin-bottom:12px;font-size:13px;"></div>
 
   <div class="tabbar">
-    <button class="tab active" data-tab="list" id="tabList">🎁 Желания</button>
-    <button class="tab" data-tab="rating" id="tabRating">🏆 Рейтинг</button>
-    <button class="tab" data-tab="reports" id="tabReports">📅 Отчёты</button>
+    <button class="tab active" data-tab="list" id="tabList"></button>
+    <button class="tab" data-tab="rating" id="tabRating"></button>
+    <button class="tab" data-tab="reports" id="tabReports"></button>
   </div>
 
   <div id="viewList">
     <div class="row" style="justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
       <div class="row" style="gap:6px;">
-        <button class="btn" id="filterOpen" style="background:#2F4F4F;color:#fff;">Открытые</button>
-        <button class="btn" id="filterDone" style="background:#EDE6D6;">Исполненные</button>
+        <button class="btn" id="filterOpen" style="background:#2F4F4F;color:#fff;"></button>
+        <button class="btn" id="filterDone" style="background:#EDE6D6;"></button>
       </div>
-      <button class="btn" id="addBtn" style="background:#E3A027;color:#412402;">+ Добавить</button>
+      <button class="btn" id="addBtn" style="background:#E3A027;color:#412402;"></button>
     </div>
 
     <div id="addForm" class="card hidden" style="background:#fff;border:1px solid #EDE6D6;margin-bottom:14px;">
-      <input id="fTitle" placeholder="Что хочется?" style="width:100%;margin-bottom:8px;" />
-      <textarea id="fNote" placeholder="Детали (необязательно)" rows="2" style="width:100%;margin-bottom:8px;"></textarea>
+      <input id="fTitle" style="width:100%;margin-bottom:8px;" />
+      <textarea id="fNote" rows="2" style="width:100%;margin-bottom:8px;"></textarea>
       <div class="row" style="gap:8px;margin-bottom:10px;flex-wrap:wrap;">
         <select id="fCat"></select>
         <select id="fPriority"></select>
       </div>
-      <button class="btn" id="saveWishBtn" style="background:#2F4F4F;color:#fff;">Сохранить</button>
+      <button class="btn" id="saveWishBtn" style="background:#2F4F4F;color:#fff;"></button>
     </div>
 
     <div id="wishGrid" class="grid"></div>
@@ -97,37 +199,7 @@
 </div>
 
 <script>
-/* ===== НАСТРОЙКА FIREBASE =====
-   1. Зайдите на console.firebase.google.com, создайте проект (бесплатно).
-   2. Build -> Realtime Database -> Create Database -> начните в тестовом режиме.
-   3. Project settings -> ваше веб-приложение -> скопируйте firebaseConfig и вставьте ниже.
-*/
-
-  // <script type="module">
-  // // Import the functions you need from the SDKs you need
-  // import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
-  // import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-analytics.js";
-  // // TODO: Add SDKs for Firebase products that you want to use
-  // // https://firebase.google.com/docs/web/setup#available-libraries
-
-  // // Your web app's Firebase configuration
-  // // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  // const firebaseConfig = {
-  //   apiKey: "AIzaSyCult4VG8WZ7TWDA-mWaTTpjxSN4IrPuWY",
-  //   authDomain: "realtime-database-1b1c6.firebaseapp.com",
-  //   databaseURL: "https://realtime-database-1b1c6-default-rtdb.firebaseio.com",
-  //   projectId: "realtime-database-1b1c6",
-  //   storageBucket: "realtime-database-1b1c6.firebasestorage.app",
-  //   messagingSenderId: "1078010849386",
-  //   appId: "1:1078010849386:web:5013f8d252b9fb3d58c213",
-  //   measurementId: "G-BC59NY30V3"
-  // };
-
-  // // Initialize Firebase
-  // const app = initializeApp(firebaseConfig);
-  // const analytics = getAnalytics(app);
-
-  
+/* ===== FIREBASE ===== */
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyCult4VG8WZ7TWDA-mWaTTpjxSN4IrPuWY",
   databaseURL: "https://realtime-database-1b1c6-default-rtdb.firebaseio.com",
@@ -153,7 +225,7 @@ const I18N = {
     hTitle: "Наш семейный вишлист", hSub: "Добавляйте желания и исполняйте их друг для друга — за это дают очки и звания.",
     gateText: "Введите код семьи — свой личный пароль-комнату. Все, кто введёт тот же код, увидят общий список.",
     join: "Войти в семью",
-    tabList: "Желания", tabRating: "Рейтинг", tabReports: "Отчёты",
+    tabList: "🎁 Желания", tabRating: "🏆 Рейтинг", tabReports: "📅 Отчёты",
     openFilter: "Открытые", doneFilter: "Исполненные", addWish: "+ Добавить", cancel: "Отмена",
     titlePh: "Что хочется?", notePh: "Детали (необязательно)", saveWish: "Сохранить",
     emptyOpen: "Пока нет открытых желаний.", emptyDone: "Ещё ничего не исполнено.",
@@ -166,6 +238,15 @@ const I18N = {
     points: "очков", maxLevel: "максимальный уровень!",
     until: (n, l) => `до «${n}» ещё ${l}`,
     toastAdded: "Желание добавлено ✦",
+    adminLabel: "Администратор", becomeAdminBtn: "Стать администратором",
+    resetBtn: "Обнулить", resetAllBtn: "Обнулить всё",
+    confirmResetAll: "Точно обнулить весь список желаний и все очки у всех? Отменить нельзя.",
+    transferLabel: "Передать права администратора:", transferBtn: "Назначить",
+    adminOnlyHint: "Эти кнопки видит только администратор.",
+    toastReset: n => `Очки ${n} обнулены`,
+    toastResetAll: "Список и очки сброшены",
+    toastAdmin: "Вы стали администратором",
+    logoutBtn: "Выйти", confirmLogout: "Выйти и ввести имя/код семьи заново на этом устройстве?",
     priorities: { low: "Не срочно", medium: "Хочу", high: "Мечта" },
     categories: { gift: "Подарок", trip: "Путешествие", home: "Для дома", fun: "Впечатление", other: "Другое" },
     levels: ["Новичок", "Помощник семьи", "Герой желаний", "Мастер добрых дел", "Легенда дома"],
@@ -175,7 +256,7 @@ const I18N = {
     hTitle: "Наш сімейний вішліст", hSub: "Додавайте бажання та виконуйте їх одне для одного — за це нараховують бали.",
     gateText: "Введіть код родини — свій пароль-кімнату. Усі, хто введе той самий код, побачать спільний список.",
     join: "Увійти",
-    tabList: "Бажання", tabRating: "Рейтинг", tabReports: "Звіти",
+    tabList: "🎁 Бажання", tabRating: "🏆 Рейтинг", tabReports: "📅 Звіти",
     openFilter: "Відкриті", doneFilter: "Виконані", addWish: "+ Додати", cancel: "Скасувати",
     titlePh: "Чого хочеться?", notePh: "Деталі (необов'язково)", saveWish: "Зберегти",
     emptyOpen: "Поки немає відкритих бажань.", emptyDone: "Ще нічого не виконано.",
@@ -188,6 +269,15 @@ const I18N = {
     points: "балів", maxLevel: "максимальний рівень!",
     until: (n, l) => `до «${n}» ще ${l}`,
     toastAdded: "Бажання додано ✦",
+    adminLabel: "Адміністратор", becomeAdminBtn: "Стати адміністратором",
+    resetBtn: "Обнулити", resetAllBtn: "Обнулити все",
+    confirmResetAll: "Точно обнулити весь список бажань і всі бали в усіх? Це не можна скасувати.",
+    transferLabel: "Передати права адміністратора:", transferBtn: "Призначити",
+    adminOnlyHint: "Ці кнопки бачить лише адміністратор.",
+    toastReset: n => `Бали ${n} обнулено`,
+    toastResetAll: "Список і бали скинуто",
+    toastAdmin: "Ви стали адміністратором",
+    logoutBtn: "Вийти", confirmLogout: "Вийти і ввести імʼя/код родини знову на цьому пристрої?",
     priorities: { low: "Не терміново", medium: "Хочу", high: "Мрія" },
     categories: { gift: "Подарунок", trip: "Подорож", home: "Для дому", fun: "Враження", other: "Інше" },
     levels: ["Новачок", "Помічник родини", "Герой бажань", "Майстер добрих справ", "Легенда дому"],
@@ -208,11 +298,15 @@ const LEVEL_THRESHOLDS = [
 let lang = localStorage.getItem("fw_lang") || "uk";
 let familyCode = localStorage.getItem("fw_family") || "";
 let wishes = {};
+let adjustments = {};
+let adminName = "";
 let filter = "open";
 let curTab = "list";
 
 function t() { return I18N[lang]; }
 function catMeta(id) { return CATEGORY_META.find(c => c.id === id) || CATEGORY_META[4]; }
+function safeKey(name) { return String(name || "unknown").replace(/[.$#\[\]\/]/g, "_"); }
+function isAdmin() { return !!adminName && adminName === myName; }
 
 function getLevel(points) {
   let idx = 0;
@@ -228,9 +322,13 @@ function wishPoints(w) {
   const granted = w.completedBy && w.completedBy !== w.addedBy;
   return Math.round(base * (granted ? 1.5 : 1));
 }
-function myTotal() {
-  return Object.values(wishes).filter(w => w.completedBy === myName).reduce((s, w) => s + wishPoints(w), 0);
+function rawPoints(person) {
+  return Object.values(wishes).filter(w => w.completedBy === person && w.status === "done").reduce((s, w) => s + wishPoints(w), 0);
 }
+function adjOf(person) { return adjustments[safeKey(person)] || 0; }
+function totalPoints(person) { return rawPoints(person) + adjOf(person); }
+function myTotal() { return totalPoints(myName); }
+
 function showToast(msg) {
   const el = document.getElementById("toast");
   el.textContent = msg; el.classList.remove("hidden");
@@ -250,10 +348,9 @@ document.getElementById("joinBtn").onclick = joinFamily;
 
 function listenWishes() {
   if (!db) { render(); return; }
-  db.ref("families/" + familyCode + "/wishes").on("value", snap => {
-    wishes = snap.val() || {};
-    render();
-  });
+  db.ref("families/" + familyCode + "/wishes").on("value", snap => { wishes = snap.val() || {}; render(); });
+  db.ref("families/" + familyCode + "/adjustments").on("value", snap => { adjustments = snap.val() || {}; render(); });
+  db.ref("families/" + familyCode + "/admin").on("value", snap => { adminName = snap.val() || ""; render(); });
 }
 
 async function addWish() {
@@ -283,6 +380,46 @@ async function deleteWish(id) {
   else { delete wishes[id]; render(); }
 }
 
+function logout() {
+  if (!confirm(t().confirmLogout)) return;
+  localStorage.removeItem("fw_family");
+  localStorage.removeItem("fw_name");
+  localStorage.removeItem("fw_lang");
+  location.reload();
+}
+
+async function claimAdmin() {
+  if (adminName) return;
+  adminName = myName;
+  if (db) await db.ref("families/" + familyCode + "/admin").set(myName);
+  showToast(t().toastAdmin);
+  render();
+}
+async function transferAdmin(newName) {
+  if (!isAdmin() || !newName) return;
+  adminName = newName;
+  if (db) await db.ref("families/" + familyCode + "/admin").set(newName);
+  render();
+}
+async function resetPerson(person) {
+  if (!isAdmin()) return;
+  const raw = rawPoints(person);
+  const key = safeKey(person);
+  const newAdj = -raw;
+  if (db) await db.ref("families/" + familyCode + "/adjustments/" + key).set(newAdj);
+  else { adjustments[key] = newAdj; render(); }
+  showToast(t().toastReset(person));
+}
+async function resetAll() {
+  if (!isAdmin()) return;
+  if (!confirm(t().confirmResetAll)) return;
+  if (db) {
+    await db.ref("families/" + familyCode + "/wishes").remove();
+    await db.ref("families/" + familyCode + "/adjustments").remove();
+  } else { wishes = {}; adjustments = {}; render(); }
+  showToast(t().toastResetAll);
+}
+
 function renderCategorySelects() {
   const catSel = document.getElementById("fCat"), prSel = document.getElementById("fPriority");
   catSel.innerHTML = CATEGORY_META.map(c => `<option value="${c.id}">${t().categories[c.id]}</option>`).join("");
@@ -294,24 +431,36 @@ function render() {
   document.getElementById("hSub").textContent = t().hSub;
   document.getElementById("gateText").textContent = t().gateText;
   document.getElementById("joinBtn").textContent = t().join;
-  document.getElementById("tabList").textContent = "🎁 " + t().tabList;
-  document.getElementById("tabRating").textContent = "🏆 " + t().tabRating;
-  document.getElementById("tabReports").textContent = "📅 " + t().tabReports;
+  document.getElementById("tabList").textContent = t().tabList;
+  document.getElementById("tabRating").textContent = t().tabRating;
+  document.getElementById("tabReports").textContent = t().tabReports;
   document.getElementById("filterOpen").textContent = t().openFilter;
   document.getElementById("filterDone").textContent = t().doneFilter;
-  document.getElementById("addBtn").textContent = t().addWish;
+  document.getElementById("filterOpen").style.background = filter === "open" ? "#2F4F4F" : "#EDE6D6";
+  document.getElementById("filterOpen").style.color = filter === "open" ? "#fff" : "#2B3A3A";
+  document.getElementById("filterDone").style.background = filter === "done" ? "#2F4F4F" : "#EDE6D6";
+  document.getElementById("filterDone").style.color = filter === "done" ? "#fff" : "#2B3A3A";
+  const formOpen = !document.getElementById("addForm").classList.contains("hidden");
+  document.getElementById("addBtn").textContent = formOpen ? t().cancel : t().addWish;
   document.getElementById("saveWishBtn").textContent = t().saveWish;
   document.getElementById("fTitle").placeholder = t().titlePh;
   document.getElementById("fNote").placeholder = t().notePh;
+  document.getElementById("langBtn").textContent = lang === "ru" ? "🌐 UA" : "🌐 RU";
+  document.getElementById("logoutBtn").textContent = "↩ " + t().logoutBtn;
+  document.getElementById("logoutBtn").onclick = logout;
   renderCategorySelects();
 
   const myPts = myTotal();
   const myLvl = getLevel(myPts);
   document.getElementById("myProgress").innerHTML = `
-    <div style="font-size:13px;opacity:0.9;">${myName || "?"} · <b style="color:#E3A027;">${myLvl.name}</b></div>
+    <div style="font-size:13px;opacity:0.9;">${escapeHtml(myName) || "?"} · <b style="color:#E3A027;">${myLvl.name}</b></div>
     <div style="font-size:12px;opacity:0.7;">${myPts} ${t().points}${myLvl.next ? " · " + t().until(myLvl.next.name, myLvl.next.min - myPts) : " · " + t().maxLevel}</div>
     <div class="jarbar"><div class="jarfill" style="width:${myLvl.progress}%;background:#E3A027;"></div></div>
   `;
+  const badge = document.getElementById("adminBadge");
+  badge.innerHTML = adminName
+    ? `⭐ ${t().adminLabel}: ${escapeHtml(adminName)}`
+    : `<button class="btn" onclick="claimAdmin()" style="background:#E3A027;color:#412402;padding:5px 10px;font-size:12px;">${t().becomeAdminBtn}</button>`;
 
   const list = Object.entries(wishes).filter(([, w]) => w.status === filter);
   const grid = document.getElementById("wishGrid");
@@ -345,25 +494,42 @@ function render() {
 
   renderRating();
   renderReports();
+
+  document.querySelectorAll(".reset-person-btn").forEach(btn => {
+    btn.onclick = () => resetPerson(btn.dataset.person);
+  });
 }
 
 function renderRating() {
   const map = {};
   Object.values(wishes).forEach(w => {
-    if (w.status === "done" && w.completedBy) map[w.completedBy] = (map[w.completedBy] || 0) + wishPoints(w);
-    else if (!(w.addedBy in map)) map[w.addedBy] = 0;
+    if (!(w.addedBy in map)) map[w.addedBy] = true;
+    if (w.completedBy && !(w.completedBy in map)) map[w.completedBy] = true;
   });
-  const entries = Object.entries(map).sort((a,b) => b[1]-a[1]);
+  const people = Object.keys(map);
+  const entries = people.map(p => [p, totalPoints(p)]).sort((a,b) => b[1]-a[1]);
   const el = document.getElementById("viewRating");
   const medals = ["🥇","🥈","🥉"];
+  const adminSection = isAdmin() ? `
+    <div class="card" style="background:#F3EAD2;border:1px solid #E3A027;margin-top:16px;">
+      <div style="font-weight:700;font-size:13px;margin-bottom:8px;">⭐ ${t().adminLabel}</div>
+      <div style="font-size:12px;color:#8A6A2F;margin-bottom:8px;">${t().adminOnlyHint}</div>
+      <button class="btn" onclick="resetAll()" style="background:#8B3A3A;color:#fff;margin-bottom:10px;">${t().resetAllBtn}</button>
+      <div style="font-size:12px;margin-bottom:6px;">${t().transferLabel}</div>
+      <div class="row" style="gap:6px;flex-wrap:wrap;">
+        <select id="transferSelect" style="flex:1;min-width:140px;">${people.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join("")}</select>
+        <button class="btn" onclick="transferAdmin(document.getElementById('transferSelect').value)" style="background:#2F4F4F;color:#fff;">${t().transferBtn}</button>
+      </div>
+    </div>` : "";
+
   el.innerHTML = `
     <div class="serif" style="font-size:17px;font-weight:600;margin-bottom:12px;">✦ ${t().ratingTitle}</div>
     ${entries.length === 0 ? `<div style="color:#8A8A82;font-size:13px;">${t().ratingEmpty}</div>` : entries.map(([person, pts], i) => {
       const lvl = getLevel(pts);
       return `<div class="card" style="background:#fff;border:1px solid #EDE6D6;margin-bottom:8px;">
-        <div class="row" style="gap:10px;">
+        <div class="row" style="gap:10px;flex-wrap:wrap;">
           <span style="width:20px;text-align:center;">${medals[i] || "·"}</span>
-          <div style="flex:1;">
+          <div style="flex:1;min-width:110px;">
             <div style="font-weight:700;font-size:14px;">${escapeHtml(person)}</div>
             <div style="font-size:12px;color:${lvl.color};font-weight:700;">${lvl.name}</div>
             <div class="jarbar"><div class="jarfill" style="width:${lvl.progress}%;background:${lvl.color};"></div></div>
@@ -372,10 +538,12 @@ function renderRating() {
             <div style="font-weight:700;">${pts}</div>
             <div style="font-size:11px;color:#8A8A82;">${t().points}</div>
           </div>
+          ${isAdmin() ? `<button class="btn reset-person-btn" data-person="${escapeHtml(person)}" style="background:#EDE6D6;color:#8B3A3A;font-size:11px;padding:5px 8px;">${t().resetBtn}</button>` : ""}
         </div>
       </div>`;
     }).join("")}
     <div style="font-size:12px;color:#8A8A82;margin-top:10px;">${t().pointsRule}</div>
+    ${adminSection}
   `;
 }
 
@@ -387,11 +555,11 @@ function periodStats(matchFn) {
   const list = Object.values(wishes);
   const added = list.filter(w => matchFn(new Date(w.addedAt)));
   const done = list.filter(w => w.status === "done" && matchFn(new Date(w.completedAt)));
-  const totalPoints = done.reduce((s,w) => s + wishPoints(w), 0);
+  const totalPts = done.reduce((s,w) => s + wishPoints(w), 0);
   const perPerson = {};
   added.forEach(w => { perPerson[w.addedBy] = perPerson[w.addedBy] || {added:0,done:0,points:0}; perPerson[w.addedBy].added++; });
   done.forEach(w => { const p = w.completedBy; perPerson[p] = perPerson[p] || {added:0,done:0,points:0}; perPerson[p].done++; perPerson[p].points += wishPoints(w); });
-  return { added: added.length, done: done.length, totalPoints, perPerson };
+  return { added: added.length, done: done.length, totalPoints: totalPts, perPerson };
 }
 
 function renderReports() {
@@ -437,10 +605,9 @@ function escapeHtml(s) { const d = document.createElement("div"); d.textContent 
 document.getElementById("langBtn").onclick = () => {
   lang = lang === "ru" ? "uk" : "ru";
   localStorage.setItem("fw_lang", lang);
-  document.getElementById("langBtn").textContent = lang === "ru" ? "🌐 UA" : "🌐 RU";
   render();
 };
-document.getElementById("addBtn").onclick = () => document.getElementById("addForm").classList.toggle("hidden");
+document.getElementById("addBtn").onclick = () => { document.getElementById("addForm").classList.toggle("hidden"); render(); };
 document.getElementById("saveWishBtn").onclick = addWish;
 document.getElementById("filterOpen").onclick = () => { filter = "open"; render(); };
 document.getElementById("filterDone").onclick = () => { filter = "done"; render(); };
