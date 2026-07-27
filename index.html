@@ -141,7 +141,8 @@
   <div class="serif" style="font-size:21px;font-weight:700;margin-bottom:8px;">Сімейний вішліст</div>
   <p style="font-size:13px;color:#8A8A82;margin-bottom:16px;line-height:1.5;" id="gateText"></p>
   <input id="nameInput" placeholder="Ваше ім'я" style="width:100%;margin-bottom:10px;" class="hidden" />
-  <input id="familyCodeInput" placeholder="наприклад: ivanov-family" style="width:100%;margin-bottom:10px;" />
+  <input id="familyNameInput" placeholder="Назва родини" style="width:100%;margin-bottom:10px;" />
+  <input id="familyPasswordInput" type="password" placeholder="Пароль родини" style="width:100%;margin-bottom:10px;" />
   <button class="btn" id="joinBtn" style="background:#2F4F4F;color:#fff;width:100%;padding:11px;font-size:14px;"></button>
 </div>
 
@@ -161,6 +162,7 @@
     <p style="font-size:13px;opacity:0.85;margin:6px 0 0;" id="hSub"></p>
     <div id="myProgress" style="margin-top:12px;background:rgba(255,255,255,0.08);border-radius:12px;padding:8px 12px;"></div>
     <div id="adminBadge" style="font-size:11px;opacity:0.75;margin-top:6px;"></div>
+    <button class="btn" id="inviteBtn" style="background:#4E9F73;color:#0F3B26;margin-top:10px;width:100%;"></button>
   </div>
 
   <div id="toast" class="hidden card" style="background:#7FA98A;color:#173404;margin-bottom:12px;font-size:13px;"></div>
@@ -177,7 +179,7 @@
         <button class="btn" id="filterOpen" style="background:#2F4F4F;color:#fff;"></button>
         <button class="btn" id="filterDone" style="background:#EDE6D6;"></button>
       </div>
-      <button class="btn" id="addBtn" style="background:#E3A027;color:#412402;"></button>
+      <button class="btn" id="addBtn" style="background:#4E9F73;color:#0F3B26;"></button>
     </div>
 
     <div id="addForm" class="card hidden" style="background:#fff;border:1px solid #EDE6D6;margin-bottom:14px;">
@@ -207,6 +209,10 @@ const FIREBASE_CONFIG = {
   projectId: "realtime-database-1b1c6",
 };
 
+/* ===== ДЛЯ ПРИГЛАШЕНИЙ И УВЕДОМЛЕНИЙ (заполните) ===== */
+const BOT_USERNAME = "ВАШ_БОТ_username"; // без @, например "family_wishlist_bot"
+const NOTIFY_ENDPOINT = "/.netlify/functions/notify"; // см. инструкцию по подключению уведомлений
+
 let db = null;
 try {
   firebase.initializeApp(FIREBASE_CONFIG);
@@ -227,9 +233,10 @@ if (!tgUser) {
 const I18N = {
   ru: {
     hTitle: "Наш семейный вишлист", hSub: "Добавляйте желания и исполняйте их друг для друга — за это дают очки и звания.",
-    gateText: "Введите код семьи — свой личный пароль-комнату. Все, кто введёт тот же код, увидят общий список.",
+    gateText: "Придумайте название семьи и пароль. Если такой семьи ещё нет — она создастся; если есть — введите тот же пароль, что и остальные.",
     join: "Войти в семью",
-    namePh: "Ваше имя",
+    namePh: "Ваше имя", familyNamePh: "Название семьи", familyPasswordPh: "Пароль семьи",
+    wrongPassword: "Неверный пароль для этой семьи.",
     tabList: "🎁 Желания", tabRating: "🏆 Рейтинг", tabReports: "📅 Отчёты",
     openFilter: "Открытые", doneFilter: "Исполненные", addWish: "+ Добавить", cancel: "Отмена",
     titlePh: "Что хочется?", notePh: "Детали (необязательно)", saveWish: "Сохранить",
@@ -251,7 +258,13 @@ const I18N = {
     toastReset: n => `Очки ${n} обнулены`,
     toastResetAll: "Список и очки сброшены",
     toastAdmin: "Вы стали администратором",
-    logoutBtn: "Выйти", confirmLogout: "Выйти и ввести имя/код семьи заново на этом устройстве?",
+    logoutBtn: "Выйти", confirmLogout: "Выйти и ввести имя/семью заново на этом устройстве?",
+    inviteBtn: "Пригласить в семью", inviteCopied: "Ссылка-приглашение скопирована",
+    inviteShareText: "Присоединяйся к нашему семейному вишлисту!",
+    inviteTooLong: "Название и пароль слишком длинные для ссылки-приглашения — сократите их.",
+    notifyAdded: (n, tt) => `🎁 ${n} добавил(а) желание «${tt}»`,
+    notifyDone: (n, tt) => `✅ ${n} исполнил(а) желание «${tt}»`,
+    notifyDeleted: (n, tt) => `🗑 ${n} удалил(а) желание «${tt}»`,
     priorities: { low: "Не срочно", medium: "Хочу", high: "Мечта" },
     categories: { gift: "Подарок", trip: "Путешествие", home: "Для дома", fun: "Впечатление", other: "Другое" },
     levels: ["Новичок", "Помощник семьи", "Герой желаний", "Мастер добрых дел", "Легенда дома"],
@@ -259,9 +272,10 @@ const I18N = {
   },
   uk: {
     hTitle: "Наш сімейний вішліст", hSub: "Додавайте бажання та виконуйте їх одне для одного — за це нараховують бали.",
-    gateText: "Введіть код родини — свій пароль-кімнату. Усі, хто введе той самий код, побачать спільний список.",
+    gateText: "Придумайте назву родини та пароль. Якщо такої родини ще немає — вона створиться; якщо є — введіть той самий пароль, що й інші.",
     join: "Увійти",
-    namePh: "Ваше ім'я",
+    namePh: "Ваше ім'я", familyNamePh: "Назва родини", familyPasswordPh: "Пароль родини",
+    wrongPassword: "Невірний пароль для цієї родини.",
     tabList: "🎁 Бажання", tabRating: "🏆 Рейтинг", tabReports: "📅 Звіти",
     openFilter: "Відкриті", doneFilter: "Виконані", addWish: "+ Додати", cancel: "Скасувати",
     titlePh: "Чого хочеться?", notePh: "Деталі (необов'язково)", saveWish: "Зберегти",
@@ -283,7 +297,13 @@ const I18N = {
     toastReset: n => `Бали ${n} обнулено`,
     toastResetAll: "Список і бали скинуто",
     toastAdmin: "Ви стали адміністратором",
-    logoutBtn: "Вийти", confirmLogout: "Вийти і ввести імʼя/код родини знову на цьому пристрої?",
+    logoutBtn: "Вийти", confirmLogout: "Вийти і ввести імʼя/родину знову на цьому пристрої?",
+    inviteBtn: "Запросити в родину", inviteCopied: "Посилання-запрошення скопійовано",
+    inviteShareText: "Приєднуйся до нашого сімейного вішлісту!",
+    inviteTooLong: "Назва і пароль занадто довгі для посилання-запрошення — скоротіть їх.",
+    notifyAdded: (n, tt) => `🎁 ${n} додав(ла) бажання «${tt}»`,
+    notifyDone: (n, tt) => `✅ ${n} виконав(ла) бажання «${tt}»`,
+    notifyDeleted: (n, tt) => `🗑 ${n} видалив(ла) бажання «${tt}»`,
     priorities: { low: "Не терміново", medium: "Хочу", high: "Мрія" },
     categories: { gift: "Подарунок", trip: "Подорож", home: "Для дому", fun: "Враження", other: "Інше" },
     levels: ["Новачок", "Помічник родини", "Герой бажань", "Майстер добрих справ", "Легенда дому"],
@@ -303,6 +323,8 @@ const LEVEL_THRESHOLDS = [
 
 let lang = localStorage.getItem("fw_lang") || "uk";
 let familyCode = localStorage.getItem("fw_family") || "";
+let familyDisplayName = localStorage.getItem("fw_family_name") || "";
+let familyPassword = localStorage.getItem("fw_family_password") || "";
 let wishes = {};
 let adjustments = {};
 let adminName = "";
@@ -313,6 +335,26 @@ function t() { return I18N[lang]; }
 function catMeta(id) { return CATEGORY_META.find(c => c.id === id) || CATEGORY_META[4]; }
 function safeKey(name) { return String(name || "unknown").replace(/[.$#\[\]\/]/g, "_"); }
 function isAdmin() { return !!adminName && adminName === myName; }
+function slugify(s) {
+  return (s || "").toString().trim().toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "") || "family";
+}
+function b64encode(str) { return btoa(unescape(encodeURIComponent(str))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
+function b64decode(str) {
+  str = str.replace(/-/g,"+").replace(/_/g,"/");
+  while (str.length % 4) str += "=";
+  return decodeURIComponent(escape(atob(str)));
+}
+
+/* Автозаполнение по инвайт-ссылке (Telegram startapp deep link) */
+const startParam = tg?.initDataUnsafe?.start_param;
+if (startParam && !familyCode) {
+  try {
+    const decoded = JSON.parse(b64decode(startParam));
+    if (decoded.n) document.getElementById("familyNameInput").value = decoded.n;
+    if (decoded.p) document.getElementById("familyPasswordInput").value = decoded.p;
+    if (tgUser && decoded.n && decoded.p) setTimeout(() => joinFamily(), 60);
+  } catch (e) { console.warn("bad start_param", e); }
+}
 
 function getLevel(points) {
   let idx = 0;
@@ -341,20 +383,39 @@ function showToast(msg) {
   setTimeout(() => el.classList.add("hidden"), 3000);
 }
 
-function joinFamily() {
-  const code = document.getElementById("familyCodeInput").value.trim();
-  if (!code) return;
+async function joinFamily() {
+  const familyName = document.getElementById("familyNameInput").value.trim();
+  const password = document.getElementById("familyPasswordInput").value;
+  if (!familyName || !password) return;
   if (!tgUser) {
     const enteredName = document.getElementById("nameInput").value.trim();
     if (!enteredName) { document.getElementById("nameInput").focus(); return; }
     myName = enteredName;
     localStorage.setItem("fw_name", myName);
   }
-  familyCode = code;
-  localStorage.setItem("fw_family", code);
+  const fid = slugify(familyName);
+  if (db) {
+    try {
+      const snap = await db.ref("families/" + fid + "/meta/password").once("value");
+      const existing = snap.val();
+      if (existing == null) {
+        await db.ref("families/" + fid + "/meta").set({ password, name: familyName });
+      } else if (existing !== password) {
+        alert(t().wrongPassword);
+        return;
+      }
+    } catch (e) { console.warn(e); }
+  }
+  familyCode = fid;
+  familyDisplayName = familyName;
+  familyPassword = password;
+  localStorage.setItem("fw_family", fid);
+  localStorage.setItem("fw_family_name", familyName);
+  localStorage.setItem("fw_family_password", password);
   document.getElementById("gate").classList.add("hidden");
   document.getElementById("app").classList.remove("hidden");
   listenWishes();
+  registerMember();
 }
 document.getElementById("joinBtn").onclick = joinFamily;
 
@@ -363,6 +424,43 @@ function listenWishes() {
   db.ref("families/" + familyCode + "/wishes").on("value", snap => { wishes = snap.val() || {}; render(); });
   db.ref("families/" + familyCode + "/adjustments").on("value", snap => { adjustments = snap.val() || {}; render(); });
   db.ref("families/" + familyCode + "/admin").on("value", snap => { adminName = snap.val() || ""; render(); });
+}
+
+async function registerMember() {
+  if (!db || !tgUser || !myName) return;
+  try { await db.ref("families/" + familyCode + "/members/" + safeKey(myName)).set(tgUser.id); } catch (e) {}
+}
+
+async function notifyFamily(message) {
+  if (!db) return;
+  try {
+    const snap = await db.ref("families/" + familyCode + "/members").once("value");
+    const members = snap.val() || {};
+    const chatIds = Object.entries(members).filter(([k]) => k !== safeKey(myName)).map(([, v]) => v).filter(Boolean);
+    if (!chatIds.length) return;
+    await fetch(NOTIFY_ENDPOINT, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chatIds, message }),
+    });
+  } catch (e) { console.warn("notify failed", e); }
+}
+
+function buildInviteLink() {
+  const payload = b64encode(JSON.stringify({ n: familyDisplayName, p: familyPassword }));
+  if (payload.length > 64) { alert(t().inviteTooLong); return null; }
+  return "https://t.me/" + BOT_USERNAME + "?startapp=" + payload;
+}
+function shareInvite() {
+  const link = buildInviteLink();
+  if (!link) return;
+  if (tg?.openTelegramLink) {
+    tg.openTelegramLink("https://t.me/share/url?url=" + encodeURIComponent(link) + "&text=" + encodeURIComponent(t().inviteShareText));
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(link);
+    showToast(t().inviteCopied);
+  } else {
+    prompt(t().inviteCopied, link);
+  }
 }
 
 async function addWish() {
@@ -380,22 +478,29 @@ async function addWish() {
   document.getElementById("addForm").classList.add("hidden");
   showToast(t().toastAdded);
   render();
+  notifyFamily(t().notifyAdded(myName, title));
 }
 
 async function completeWish(id) {
   if (!myName) return;
+  const title = wishes[id]?.title || "";
   const upd = { status: "done", completedBy: myName, completedAt: Date.now() };
   if (db) await db.ref("families/" + familyCode + "/wishes/" + id).update(upd);
   else { Object.assign(wishes[id], upd); render(); }
+  notifyFamily(t().notifyDone(myName, title));
 }
 async function deleteWish(id) {
+  const title = wishes[id]?.title || "";
   if (db) await db.ref("families/" + familyCode + "/wishes/" + id).remove();
   else { delete wishes[id]; render(); }
+  notifyFamily(t().notifyDeleted(myName, title));
 }
 
 function logout() {
   if (!confirm(t().confirmLogout)) return;
   localStorage.removeItem("fw_family");
+  localStorage.removeItem("fw_family_name");
+  localStorage.removeItem("fw_family_password");
   localStorage.removeItem("fw_name");
   localStorage.removeItem("fw_lang");
   location.reload();
@@ -444,6 +549,8 @@ function render() {
   document.getElementById("hSub").textContent = t().hSub;
   document.getElementById("gateText").textContent = t().gateText;
   document.getElementById("nameInput").placeholder = t().namePh;
+  document.getElementById("familyNameInput").placeholder = t().familyNamePh;
+  document.getElementById("familyPasswordInput").placeholder = t().familyPasswordPh;
   document.getElementById("joinBtn").textContent = t().join;
   document.getElementById("tabList").textContent = t().tabList;
   document.getElementById("tabRating").textContent = t().tabRating;
@@ -462,6 +569,8 @@ function render() {
   document.getElementById("langBtn").textContent = lang === "ru" ? "🌐 UA" : "🌐 RU";
   document.getElementById("logoutBtn").textContent = "↩ " + t().logoutBtn;
   document.getElementById("logoutBtn").onclick = logout;
+  document.getElementById("inviteBtn").textContent = "📨 " + t().inviteBtn;
+  document.getElementById("inviteBtn").onclick = shareInvite;
   renderCategorySelects();
 
   const myPts = myTotal();
@@ -474,7 +583,7 @@ function render() {
   const badge = document.getElementById("adminBadge");
   badge.innerHTML = adminName
     ? `⭐ ${t().adminLabel}: ${escapeHtml(adminName)}`
-    : `<button class="btn" onclick="claimAdmin()" style="background:#E3A027;color:#412402;padding:5px 10px;font-size:12px;">${t().becomeAdminBtn}</button>`;
+    : `<button class="btn" onclick="claimAdmin()" style="background:#4E9F73;color:#0F3B26;padding:5px 10px;font-size:12px;">${t().becomeAdminBtn}</button>`;
 
   const list = Object.entries(wishes).filter(([, w]) => w.status === filter);
   const grid = document.getElementById("wishGrid");
@@ -638,6 +747,7 @@ if (familyCode) {
   document.getElementById("gate").classList.add("hidden");
   document.getElementById("app").classList.remove("hidden");
   listenWishes();
+  registerMember();
 } else {
   render();
 }
