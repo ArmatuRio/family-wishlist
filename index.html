@@ -219,7 +219,7 @@ const FIREBASE_CONFIG = {
 /* ===== ДЛЯ ПРИГЛАШЕНИЙ И УВЕДОМЛЕНИЙ (заполните) ===== */
 const BOT_USERNAME = "ВАШ_БОТ_username"; // без @, например "family_wishlist_bot"
 const NOTIFY_ENDPOINT = "/.netlify/functions/notify"; // см. инструкцию по подключению уведомлений
-const MAX_PHOTO_BYTES = 4 * 1024 * 1024; // 4 МБ
+const MAX_PHOTO_BYTES = 14 * 1024 * 1024; // 14 МБ
 
 let db = null;
 let storage = null;
@@ -252,7 +252,7 @@ const I18N = {
     titlePh: "Что хочется?", notePh: "Детали (необязательно)", saveWish: "Сохранить",
     linkPh: "Ссылка на товар (необязательно)", photoLabel: "Фото (необязательно)",
     openLink: "Открыть ссылку", uploadingPhoto: "Загружаем фото…",
-    photoTooLarge: "Фото слишком большое (максимум 4 МБ) — выберите другое.",
+    photoTooLarge: "Фото слишком большое (максимум 14 МБ) — выберите другое.",
     emptyOpen: "Пока нет открытых желаний.", emptyDone: "Ещё ничего не исполнено.",
     from: "от", grantedBy: n => `исполнил(а) ${n}`, fulfil: "Исполнить",
     ratingTitle: "Звания семьи", ratingEmpty: "Рейтинг появится после первого исполненного желания.",
@@ -294,7 +294,7 @@ const I18N = {
     titlePh: "Чого хочеться?", notePh: "Деталі (необов'язково)", saveWish: "Зберегти",
     linkPh: "Посилання на товар (необов'язково)", photoLabel: "Фото (необов'язково)",
     openLink: "Відкрити посилання", uploadingPhoto: "Завантажуємо фото…",
-    photoTooLarge: "Фото завелике (максимум 4 МБ) — оберіть інше.",
+    photoTooLarge: "Фото завелике (максимум 14 МБ) — оберіть інше.",
     emptyOpen: "Поки немає відкритих бажань.", emptyDone: "Ще нічого не виконано.",
     from: "від", grantedBy: n => `виконав(ла) ${n}`, fulfil: "Виконати",
     ratingTitle: "Звання родини", ratingEmpty: "Рейтинг зʼявиться після першого виконаного бажання.",
