@@ -717,7 +717,7 @@ function render() {
           <span style="font-size:11px;font-weight:700;color:${cat.color};text-transform:uppercase;">${t().categories[w.category]}</span>
           <span style="font-size:11px;color:${cat.color};">${t().priorities[w.priority]}</span>
         </div>
-        <div class="serif" style="font-size:16px;font-weight:600;margin:6px 0 2px;">${escapeHtml(w.title)}</div>
+        <div class="serif" style="font-size:16px;font-weight:600;margin:6px 0 2px;color:#22302E;">${escapeHtml(w.title)}</div>
         ${w.note ? `<div style="font-size:13px;color:#4A4A45;margin-bottom:6px;">${escapeHtml(w.note)}</div>` : ""}
         ${w.link ? `<a href="${escapeHtml(w.link)}" target="_blank" rel="noopener noreferrer" style="font-size:12px;color:${cat.color};text-decoration:underline;display:inline-block;margin-bottom:6px;">🔗 ${t().openLink}</a>` : ""}
         <div style="font-size:12px;color:#5F5E5A;">${t().from} ${escapeHtml(w.addedBy)}</div>
@@ -770,7 +770,7 @@ function renderRating() {
         <div class="row" style="gap:10px;flex-wrap:wrap;">
           <span style="width:20px;text-align:center;">${medals[i] || "·"}</span>
           <div style="flex:1;min-width:110px;">
-            <div style="font-weight:700;font-size:14px;">${escapeHtml(person)}</div>
+            <div style="font-weight:700;font-size:14px;color:#22302E;">${escapeHtml(person)}</div>
             <div style="font-size:12px;color:${lvl.color};font-weight:700;">${lvl.name}</div>
             <div class="jarbar"><div class="jarfill" style="width:${lvl.progress}%;background:${lvl.color};"></div></div>
           </div>
@@ -826,9 +826,9 @@ function renderReports() {
       <select id="yearSel">${yearsArr.map(y=>`<option value="${y}" ${y===repYear?'selected':''}>${y}</option>`).join("")}</select>
     </div>
     <div class="row" style="gap:10px;margin-bottom:16px;">
-      <div class="card" style="background:#F3EAD2;flex:1;"><div style="font-size:12px;color:#8A6A2F;">${t().addedStat}</div><div class="serif" style="font-size:22px;font-weight:600;">${stats.added}</div></div>
-      <div class="card" style="background:#DCEEE9;flex:1;"><div style="font-size:12px;color:#1E5B54;">${t().doneStat}</div><div class="serif" style="font-size:22px;font-weight:600;">${stats.done}</div></div>
-      <div class="card" style="background:#F6E7D8;flex:1;"><div style="font-size:12px;color:#B4682E;">${t().pointsStat}</div><div class="serif" style="font-size:22px;font-weight:600;">${stats.totalPoints}</div></div>
+      <div class="card" style="background:#F3EAD2;flex:1;"><div style="font-size:12px;color:#8A6A2F;">${t().addedStat}</div><div class="serif" style="font-size:22px;font-weight:600;color:#22302E;">${stats.added}</div></div>
+      <div class="card" style="background:#DCEEE9;flex:1;"><div style="font-size:12px;color:#1E5B54;">${t().doneStat}</div><div class="serif" style="font-size:22px;font-weight:600;color:#22302E;">${stats.done}</div></div>
+      <div class="card" style="background:#F6E7D8;flex:1;"><div style="font-size:12px;color:#B4682E;">${t().pointsStat}</div><div class="serif" style="font-size:22px;font-weight:600;color:#22302E;">${stats.totalPoints}</div></div>
     </div>
     <div class="serif" style="font-size:14px;font-weight:600;margin-bottom:8px;">${t().perPerson}</div>
     ${Object.keys(stats.perPerson).length === 0 ? `<div style="color:#8A8A82;font-size:13px;">${t().noData}</div>` : bars}
