@@ -587,10 +587,14 @@ async function submitWish() {
 
 async function completeWish(id) {
   if (!myName) return;
-  const title = wishes[id]?.title || "";
+  const w = wishes[id] || {};
+  const title = w.title || "";
+  const photoUrl = w.photoUrl;
   const upd = { status: "done", completedBy: myName, completedAt: Date.now() };
+  if (photoUrl) upd.photoUrl = null;
   if (db) await db.ref("families/" + familyCode + "/wishes/" + id).update(upd);
   else { Object.assign(wishes[id], upd); render(); }
+  if (storage && photoUrl) { try { await storage.refFromURL(photoUrl).delete(); } catch (e) {} }
   notifyFamily(t().notifyDone(myName, title));
 }
 async function deleteWish(id) {
