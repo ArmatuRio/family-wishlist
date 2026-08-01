@@ -151,18 +151,18 @@
 
   <div class="card" style="background:#2F4F4F;color:#FBF8F0;margin-bottom:14px;">
     <div class="row header-top" style="justify-content:space-between;">
-      <div class="row" style="gap:8px;">
+      <div class="row" style="gap:8px;flex-wrap:wrap;row-gap:6px;">
         <span style="font-size:22px;">🎁</span>
         <span class="serif" style="font-size:20px;font-weight:600;" id="hTitle"></span>
+        <div id="familyNameBadge" class="hidden" style="display:inline-flex;align-items:center;gap:6px;background:rgba(227,160,39,0.16);border:1px solid rgba(227,160,39,0.4);padding:3px 11px;border-radius:20px;">
+          <span style="font-size:12px;">👪</span>
+          <span id="familyNameText" style="font-size:11px;font-weight:700;color:#F5D89B;letter-spacing:0.02em;"></span>
+        </div>
       </div>
       <div class="row header-btns" style="gap:6px;">
         <button class="btn" id="langBtn" style="background:rgba(255,255,255,0.12);color:#FBF8F0;"></button>
         <button class="btn" id="logoutBtn" style="background:rgba(255,255,255,0.12);color:#FBF8F0;"></button>
       </div>
-    </div>
-    <div id="familyNameBadge" class="hidden" style="display:inline-flex;align-items:center;gap:6px;background:rgba(227,160,39,0.16);border:1px solid rgba(227,160,39,0.4);padding:4px 12px;border-radius:20px;margin-top:6px;width:fit-content;">
-      <span style="font-size:13px;">👪</span>
-      <span id="familyNameText" style="font-size:12px;font-weight:700;color:#F5D89B;letter-spacing:0.02em;"></span>
     </div>
     <p style="font-size:13px;opacity:0.85;margin:6px 0 0;" id="hSub"></p>
     <div id="myProgress" style="margin-top:12px;background:rgba(255,255,255,0.08);border-radius:12px;padding:8px 12px;"></div>
