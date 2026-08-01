@@ -174,6 +174,7 @@
 
   <div class="tabbar">
     <button class="tab active" data-tab="list" id="tabList"></button>
+    <button class="tab" data-tab="shopping" id="tabShopping"></button>
     <button class="tab" data-tab="rating" id="tabRating"></button>
     <button class="tab" data-tab="reports" id="tabReports"></button>
   </div>
@@ -204,6 +205,16 @@
 
     <div id="wishGrid" class="grid"></div>
     <div id="emptyMsg" style="text-align:center;color:#8A8A82;font-size:13px;padding:20px 0;"></div>
+  </div>
+
+  <div id="viewShopping" class="hidden">
+    <div class="row" style="gap:6px;margin-bottom:12px;">
+      <input id="shopInput" style="flex:1;" />
+      <button class="btn" id="shopAddBtn" style="background:#4E9F73;color:#0F3B26;"></button>
+    </div>
+    <div id="shopList"></div>
+    <div id="shopEmpty" style="text-align:center;color:#8A8A82;font-size:13px;padding:20px 0;"></div>
+    <button class="btn" id="shopClearBtn" style="background:transparent;color:#993C1D;margin-top:10px;font-size:12px;"></button>
   </div>
 
   <div id="viewRating" class="hidden"></div>
@@ -251,7 +262,7 @@ const I18N = {
     join: "Войти в семью",
     namePh: "Ваше имя", familyNamePh: "Название семьи", familyPasswordPh: "Пароль семьи",
     wrongPassword: "Неверный пароль для этой семьи.",
-    tabList: "🎁 Желания", tabRating: "🏆 Рейтинг", tabReports: "📅 Отчёты",
+    tabList: "🎁 Желания", tabShopping: "🛒 Покупки", tabRating: "🏆 Рейтинг", tabReports: "📅 Отчёты",
     openFilter: "Открытые", doneFilter: "Исполненные", addWish: "+ Добавить", cancel: "Отмена",
     titlePh: "Что хочется?", notePh: "Детали (необязательно)", saveWish: "Сохранить",
     linkPh: "Ссылка на товар (необязательно)", photoLabel: "Фото (необязательно)",
@@ -283,6 +294,9 @@ const I18N = {
     notifyAdded: (n, tt) => `🎁 ${n} добавил(а) желание «${tt}»`,
     notifyDone: (n, tt) => `✅ ${n} исполнил(а) желание «${tt}»`,
     notifyDeleted: (n, tt) => `🗑 ${n} удалил(а) желание «${tt}»`,
+    shopAdd: "Добавить", shopAddPh: "Что купить?", shopEmpty: "Список покупок пуст.",
+    shopClearBought: "Очистить купленное",
+    notifyShopAdded: (n, tt) => `🛒 ${n} добавил(а) в покупки «${tt}»`,
     priorities: { low: "Не срочно", medium: "Хочу", high: "Мечта" },
     categories: { gift: "Подарок", trip: "Путешествие", home: "Для дома", fun: "Впечатление", other: "Другое" },
     levels: ["Новичок", "Помощник семьи", "Герой желаний", "Мастер добрых дел", "Легенда дома"],
@@ -294,7 +308,7 @@ const I18N = {
     join: "Увійти",
     namePh: "Ваше ім'я", familyNamePh: "Назва родини", familyPasswordPh: "Пароль родини",
     wrongPassword: "Невірний пароль для цієї родини.",
-    tabList: "🎁 Бажання", tabRating: "🏆 Рейтинг", tabReports: "📅 Звіти",
+    tabList: "🎁 Бажання", tabShopping: "🛒 Покупки", tabRating: "🏆 Рейтинг", tabReports: "📅 Звіти",
     openFilter: "Відкриті", doneFilter: "Виконані", addWish: "+ Додати", cancel: "Скасувати",
     titlePh: "Чого хочеться?", notePh: "Деталі (необов'язково)", saveWish: "Зберегти",
     linkPh: "Посилання на товар (необов'язково)", photoLabel: "Фото (необов'язково)",
@@ -326,6 +340,9 @@ const I18N = {
     notifyAdded: (n, tt) => `🎁 ${n} додав(ла) бажання «${tt}»`,
     notifyDone: (n, tt) => `✅ ${n} виконав(ла) бажання «${tt}»`,
     notifyDeleted: (n, tt) => `🗑 ${n} видалив(ла) бажання «${tt}»`,
+    shopAdd: "Додати", shopAddPh: "Що купити?", shopEmpty: "Список покупок порожній.",
+    shopClearBought: "Очистити куплене",
+    notifyShopAdded: (n, tt) => `🛒 ${n} додав(ла) до покупок «${tt}»`,
     priorities: { low: "Не терміново", medium: "Хочу", high: "Мрія" },
     categories: { gift: "Подарунок", trip: "Подорож", home: "Для дому", fun: "Враження", other: "Інше" },
     levels: ["Новачок", "Помічник родини", "Герой бажань", "Майстер добрих справ", "Легенда дому"],
@@ -353,6 +370,7 @@ let adminName = "";
 let filter = "open";
 let curTab = "list";
 let editingId = null;
+let shoppingItems = {};
 
 function t() { return I18N[lang]; }
 function catMeta(id) { return CATEGORY_META.find(c => c.id === id) || CATEGORY_META[4]; }
@@ -447,6 +465,7 @@ function listenWishes() {
   db.ref("families/" + familyCode + "/wishes").on("value", snap => { wishes = snap.val() || {}; render(); });
   db.ref("families/" + familyCode + "/adjustments").on("value", snap => { adjustments = snap.val() || {}; render(); });
   db.ref("families/" + familyCode + "/admin").on("value", snap => { adminName = snap.val() || ""; render(); });
+  db.ref("families/" + familyCode + "/shopping").on("value", snap => { shoppingItems = snap.val() || {}; render(); });
 }
 
 async function registerMember() {
@@ -649,6 +668,67 @@ async function resetAll() {
   showToast(t().toastResetAll);
 }
 
+async function addShoppingItem() {
+  const text = document.getElementById("shopInput").value.trim();
+  if (!text || !myName) return;
+  const item = { text, addedBy: myName, addedAt: Date.now(), done: false, doneBy: null };
+  if (db) await db.ref("families/" + familyCode + "/shopping").push(item);
+  else { shoppingItems[Date.now()] = item; render(); }
+  document.getElementById("shopInput").value = "";
+  notifyFamily(t().notifyShopAdded(myName, text));
+}
+async function toggleShoppingItem(id) {
+  const item = shoppingItems[id];
+  if (!item) return;
+  const upd = { done: !item.done, doneBy: !item.done ? myName : null };
+  if (db) await db.ref("families/" + familyCode + "/shopping/" + id).update(upd);
+  else { Object.assign(shoppingItems[id], upd); render(); }
+}
+async function deleteShoppingItem(id) {
+  if (db) await db.ref("families/" + familyCode + "/shopping/" + id).remove();
+  else { delete shoppingItems[id]; render(); }
+}
+async function clearBoughtShopping() {
+  const doneIds = Object.entries(shoppingItems).filter(([, v]) => v.done).map(([id]) => id);
+  if (!doneIds.length) return;
+  if (db) {
+    const updates = {};
+    doneIds.forEach(id => { updates[id] = null; });
+    await db.ref("families/" + familyCode + "/shopping").update(updates);
+  } else {
+    doneIds.forEach(id => delete shoppingItems[id]);
+    render();
+  }
+}
+
+function renderShopping() {
+  const entries = Object.entries(shoppingItems).sort((a, b) => (a[1].addedAt || 0) - (b[1].addedAt || 0));
+  const list = document.getElementById("shopList");
+  const empty = document.getElementById("shopEmpty");
+  if (entries.length === 0) {
+    list.innerHTML = "";
+    empty.textContent = t().shopEmpty;
+  } else {
+    empty.textContent = "";
+    list.innerHTML = entries.map(([id, it]) => `
+      <div class="card" style="background:#fff;border:1px solid #EDE6D6;margin-bottom:8px;padding:10px 12px;">
+        <div class="row" style="gap:10px;justify-content:space-between;">
+          <label class="row" style="gap:10px;flex:1;cursor:pointer;">
+            <input type="checkbox" ${it.done ? "checked" : ""} onchange="toggleShoppingItem('${id}')" style="width:18px;height:18px;" />
+            <span style="font-size:14px;${it.done ? "text-decoration:line-through;color:#8A8A82;" : "color:#22302E;"}">${escapeHtml(it.text)}</span>
+          </label>
+          <button class="btn" onclick="deleteShoppingItem('${id}')" style="background:transparent;color:#993C1D;padding:4px 8px;">🗑</button>
+        </div>
+      </div>`).join("");
+  }
+  const leftCount = entries.filter(([, it]) => !it.done).length;
+  document.getElementById("shopAddBtn").textContent = t().shopAdd;
+  document.getElementById("shopInput").placeholder = t().shopAddPh;
+  document.getElementById("shopClearBtn").textContent = "🧹 " + t().shopClearBought;
+  document.getElementById("shopClearBtn").classList.toggle("hidden", entries.every(([, it]) => !it.done));
+}
+
+
 function renderCategorySelects() {
   const catSel = document.getElementById("fCat"), prSel = document.getElementById("fPriority");
   const curCat = catSel.value, curPr = prSel.value;
@@ -669,6 +749,7 @@ function render() {
   document.getElementById("familyPasswordInput").placeholder = t().familyPasswordPh;
   document.getElementById("joinBtn").textContent = t().join;
   document.getElementById("tabList").textContent = t().tabList;
+  document.getElementById("tabShopping").textContent = t().tabShopping;
   document.getElementById("tabRating").textContent = t().tabRating;
   document.getElementById("tabReports").textContent = t().tabReports;
   document.getElementById("filterOpen").textContent = t().openFilter;
@@ -738,6 +819,7 @@ function render() {
 
   renderRating();
   renderReports();
+  renderShopping();
 
   document.querySelectorAll(".reset-person-btn").forEach(btn => {
     btn.onclick = () => resetPerson(btn.dataset.person);
@@ -864,9 +946,13 @@ document.querySelectorAll(".tab").forEach(tab => tab.onclick = () => {
   document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
   tab.classList.add("active");
   document.getElementById("viewList").classList.toggle("hidden", curTab !== "list");
+  document.getElementById("viewShopping").classList.toggle("hidden", curTab !== "shopping");
   document.getElementById("viewRating").classList.toggle("hidden", curTab !== "rating");
   document.getElementById("viewReports").classList.toggle("hidden", curTab !== "reports");
 });
+document.getElementById("shopAddBtn").onclick = addShoppingItem;
+document.getElementById("shopInput").addEventListener("keydown", e => { if (e.key === "Enter") addShoppingItem(); });
+document.getElementById("shopClearBtn").onclick = clearBoughtShopping;
 
 if (familyCode) {
   document.getElementById("gate").classList.add("hidden");
