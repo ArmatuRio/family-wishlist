@@ -7,6 +7,7 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap');
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -189,6 +190,11 @@
         <select id="fCat"></select>
         <select id="fPriority"></select>
       </div>
+      <input id="fLink" type="url" style="width:100%;margin-bottom:8px;" />
+      <div style="margin-bottom:10px;">
+        <label id="fPhotoLabel" for="fPhoto" style="font-size:12px;color:#8A8A82;display:block;margin-bottom:4px;"></label>
+        <input id="fPhoto" type="file" accept="image/*" style="width:100%;font-size:12px;" />
+      </div>
       <button class="btn" id="saveWishBtn" style="background:#2F4F4F;color:#fff;"></button>
     </div>
 
@@ -207,16 +213,20 @@ const FIREBASE_CONFIG = {
   apiKey: "AIzaSyCult4VG8WZ7TWDA-mWaTTpjxSN4IrPuWY",
   databaseURL: "https://realtime-database-1b1c6-default-rtdb.firebaseio.com",
   projectId: "realtime-database-1b1c6",
+  storageBucket: "realtime-database-1b1c6.firebasestorage.app",
 };
 
 /* ===== ДЛЯ ПРИГЛАШЕНИЙ И УВЕДОМЛЕНИЙ (заполните) ===== */
-const BOT_USERNAME = "Family_wishlistbot"; // без @, например "family_wishlist_bot"
+const BOT_USERNAME = "ВАШ_БОТ_username"; // без @, например "family_wishlist_bot"
 const NOTIFY_ENDPOINT = "/.netlify/functions/notify"; // см. инструкцию по подключению уведомлений
+const MAX_PHOTO_BYTES = 4 * 1024 * 1024; // 4 МБ
 
 let db = null;
+let storage = null;
 try {
   firebase.initializeApp(FIREBASE_CONFIG);
   db = firebase.database();
+  storage = firebase.storage();
 } catch (e) {
   console.warn("Firebase не настроен — данные не будут сохраняться между устройствами.", e);
 }
@@ -240,6 +250,9 @@ const I18N = {
     tabList: "🎁 Желания", tabRating: "🏆 Рейтинг", tabReports: "📅 Отчёты",
     openFilter: "Открытые", doneFilter: "Исполненные", addWish: "+ Добавить", cancel: "Отмена",
     titlePh: "Что хочется?", notePh: "Детали (необязательно)", saveWish: "Сохранить",
+    linkPh: "Ссылка на товар (необязательно)", photoLabel: "Фото (необязательно)",
+    openLink: "Открыть ссылку", uploadingPhoto: "Загружаем фото…",
+    photoTooLarge: "Фото слишком большое (максимум 4 МБ) — выберите другое.",
     emptyOpen: "Пока нет открытых желаний.", emptyDone: "Ещё ничего не исполнено.",
     from: "от", grantedBy: n => `исполнил(а) ${n}`, fulfil: "Исполнить",
     ratingTitle: "Звания семьи", ratingEmpty: "Рейтинг появится после первого исполненного желания.",
@@ -279,6 +292,9 @@ const I18N = {
     tabList: "🎁 Бажання", tabRating: "🏆 Рейтинг", tabReports: "📅 Звіти",
     openFilter: "Відкриті", doneFilter: "Виконані", addWish: "+ Додати", cancel: "Скасувати",
     titlePh: "Чого хочеться?", notePh: "Деталі (необов'язково)", saveWish: "Зберегти",
+    linkPh: "Посилання на товар (необов'язково)", photoLabel: "Фото (необов'язково)",
+    openLink: "Відкрити посилання", uploadingPhoto: "Завантажуємо фото…",
+    photoTooLarge: "Фото завелике (максимум 4 МБ) — оберіть інше.",
     emptyOpen: "Поки немає відкритих бажань.", emptyDone: "Ще нічого не виконано.",
     from: "від", grantedBy: n => `виконав(ла) ${n}`, fulfil: "Виконати",
     ratingTitle: "Звання родини", ratingEmpty: "Рейтинг зʼявиться після першого виконаного бажання.",
@@ -463,18 +479,48 @@ function shareInvite() {
   }
 }
 
+function safeUrl(u) {
+  if (!u) return "";
+  const s = u.trim();
+  if (/^https?:\/\//i.test(s)) return s;
+  if (/^[\w-]+\.[a-z]{2,}/i.test(s)) return "https://" + s;
+  return "";
+}
+
+async function uploadWishPhoto(file, wishKey) {
+  const ref = storage.ref("families/" + familyCode + "/photos/" + wishKey);
+  await ref.put(file);
+  return await ref.getDownloadURL();
+}
+
 async function addWish() {
   const title = document.getElementById("fTitle").value.trim();
   if (!title || !myName) return;
+  const fileInput = document.getElementById("fPhoto");
+  const file = fileInput.files && fileInput.files[0];
+  if (file && file.size > MAX_PHOTO_BYTES) { alert(t().photoTooLarge); return; }
+  const link = safeUrl(document.getElementById("fLink").value.trim());
   const w = {
     title, note: document.getElementById("fNote").value.trim(),
     category: document.getElementById("fCat").value,
     priority: document.getElementById("fPriority").value,
     addedBy: myName, addedAt: Date.now(), status: "open", completedBy: null, completedAt: null,
+    link: link || null, photoUrl: null,
   };
-  if (db) await db.ref("families/" + familyCode + "/wishes").push(w);
-  else { wishes[Date.now()] = w; render(); }
+  if (db) {
+    const newRef = db.ref("families/" + familyCode + "/wishes").push();
+    if (file && storage) {
+      try {
+        showToast(t().uploadingPhoto);
+        w.photoUrl = await uploadWishPhoto(file, newRef.key);
+      } catch (e) { console.warn("photo upload failed", e); }
+    }
+    await newRef.set(w);
+  } else {
+    wishes[Date.now()] = w; render();
+  }
   document.getElementById("fTitle").value = ""; document.getElementById("fNote").value = "";
+  document.getElementById("fLink").value = ""; document.getElementById("fPhoto").value = "";
   document.getElementById("addForm").classList.add("hidden");
   showToast(t().toastAdded);
   render();
@@ -490,9 +536,12 @@ async function completeWish(id) {
   notifyFamily(t().notifyDone(myName, title));
 }
 async function deleteWish(id) {
-  const title = wishes[id]?.title || "";
+  const w = wishes[id] || {};
+  const title = w.title || "";
+  const photoUrl = w.photoUrl;
   if (db) await db.ref("families/" + familyCode + "/wishes/" + id).remove();
   else { delete wishes[id]; render(); }
+  if (storage && photoUrl) { try { await storage.refFromURL(photoUrl).delete(); } catch (e) {} }
   notifyFamily(t().notifyDeleted(myName, title));
 }
 
@@ -566,6 +615,8 @@ function render() {
   document.getElementById("saveWishBtn").textContent = t().saveWish;
   document.getElementById("fTitle").placeholder = t().titlePh;
   document.getElementById("fNote").placeholder = t().notePh;
+  document.getElementById("fLink").placeholder = t().linkPh;
+  document.getElementById("fPhotoLabel").textContent = t().photoLabel;
   document.getElementById("langBtn").textContent = lang === "ru" ? "🌐 UA" : "🌐 RU";
   document.getElementById("logoutBtn").textContent = "↩ " + t().logoutBtn;
   document.getElementById("logoutBtn").onclick = logout;
@@ -598,12 +649,14 @@ function render() {
       const pts = wishPoints(w);
       return `
       <div class="card" style="background:${cat.bg};">
+        ${w.photoUrl ? `<img src="${escapeHtml(w.photoUrl)}" loading="lazy" style="width:100%;max-height:150px;object-fit:cover;border-radius:10px;margin-bottom:8px;display:block;" />` : ""}
         <div class="row" style="justify-content:space-between;">
           <span style="font-size:11px;font-weight:700;color:${cat.color};text-transform:uppercase;">${t().categories[w.category]}</span>
           <span style="font-size:11px;color:${cat.color};">${t().priorities[w.priority]}</span>
         </div>
         <div class="serif" style="font-size:16px;font-weight:600;margin:6px 0 2px;">${escapeHtml(w.title)}</div>
         ${w.note ? `<div style="font-size:13px;color:#4A4A45;margin-bottom:6px;">${escapeHtml(w.note)}</div>` : ""}
+        ${w.link ? `<a href="${escapeHtml(w.link)}" target="_blank" rel="noopener noreferrer" style="font-size:12px;color:${cat.color};text-decoration:underline;display:inline-block;margin-bottom:6px;">🔗 ${t().openLink}</a>` : ""}
         <div style="font-size:12px;color:#5F5E5A;">${t().from} ${escapeHtml(w.addedBy)}</div>
         ${w.status === "done"
           ? `<div style="font-size:12px;color:#3B6D11;margin-top:6px;font-weight:700;">✓ ${t().grantedBy(escapeHtml(w.completedBy))} · +${pts}</div>`
