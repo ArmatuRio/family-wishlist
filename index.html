@@ -188,6 +188,11 @@
       <button class="btn" id="addBtn" style="background:#4E9F73;color:#0F3B26;"></button>
     </div>
 
+    <div class="row" style="gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+      <select id="filterCatSelect" style="flex:1;min-width:130px;"></select>
+      <select id="filterPersonSelect" style="flex:1;min-width:130px;"></select>
+    </div>
+
     <div id="addForm" class="card hidden" style="background:#fff;border:1px solid #EDE6D6;margin-bottom:14px;">
       <input id="fTitle" style="width:100%;margin-bottom:8px;" />
       <textarea id="fNote" rows="2" style="width:100%;margin-bottom:8px;"></textarea>
@@ -264,6 +269,7 @@ const I18N = {
     wrongPassword: "Неверный пароль для этой семьи.",
     tabList: "🎁 Желания", tabShopping: "🛒 Покупки", tabRating: "🏆 Рейтинг", tabReports: "📅 Отчёты",
     openFilter: "Открытые", doneFilter: "Исполненные", addWish: "+ Добавить", cancel: "Отмена",
+    filterAllCategories: "Все категории", filterAllPeople: "Все члены семьи",
     titlePh: "Что хочется?", notePh: "Детали (необязательно)", saveWish: "Сохранить",
     linkPh: "Ссылка на товар (необязательно)", photoLabel: "Фото (необязательно)",
     openLink: "Открыть ссылку", uploadingPhoto: "Загружаем фото…",
@@ -310,6 +316,7 @@ const I18N = {
     wrongPassword: "Невірний пароль для цієї родини.",
     tabList: "🎁 Бажання", tabShopping: "🛒 Покупки", tabRating: "🏆 Рейтинг", tabReports: "📅 Звіти",
     openFilter: "Відкриті", doneFilter: "Виконані", addWish: "+ Додати", cancel: "Скасувати",
+    filterAllCategories: "Усі категорії", filterAllPeople: "Усі члени родини",
     titlePh: "Чого хочеться?", notePh: "Деталі (необов'язково)", saveWish: "Зберегти",
     linkPh: "Посилання на товар (необов'язково)", photoLabel: "Фото (необов'язково)",
     openLink: "Відкрити посилання", uploadingPhoto: "Завантажуємо фото…",
@@ -368,6 +375,8 @@ let wishes = {};
 let adjustments = {};
 let adminName = "";
 let filter = "open";
+let filterCat = "all";
+let filterPerson = "all";
 let curTab = "list";
 let editingId = null;
 let shoppingItems = {};
@@ -784,7 +793,24 @@ function render() {
     ? `⭐ ${t().adminLabel}: ${escapeHtml(adminName)}`
     : `<button class="btn" onclick="claimAdmin()" style="background:#4E9F73;color:#0F3B26;padding:5px 10px;font-size:12px;">${t().becomeAdminBtn}</button>`;
 
-  const list = Object.entries(wishes).filter(([, w]) => w.status === filter);
+  const catSelFilter = document.getElementById("filterCatSelect");
+  const personSelFilter = document.getElementById("filterPersonSelect");
+  const peopleSet = new Set(Object.values(wishes).map(w => w.addedBy).filter(Boolean));
+  const curCatF = catSelFilter.value || filterCat;
+  const curPersonF = personSelFilter.value || filterPerson;
+  catSelFilter.innerHTML = `<option value="all">${t().filterAllCategories}</option>` +
+    CATEGORY_META.map(c => `<option value="${c.id}">${t().categories[c.id]}</option>`).join("");
+  personSelFilter.innerHTML = `<option value="all">${t().filterAllPeople}</option>` +
+    [...peopleSet].map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join("");
+  catSelFilter.value = curCatF; if (catSelFilter.value !== curCatF) catSelFilter.value = "all";
+  personSelFilter.value = curPersonF; if (personSelFilter.value !== curPersonF) personSelFilter.value = "all";
+  filterCat = catSelFilter.value;
+  filterPerson = personSelFilter.value;
+
+  const list = Object.entries(wishes)
+    .filter(([, w]) => w.status === filter)
+    .filter(([, w]) => filterCat === "all" || w.category === filterCat)
+    .filter(([, w]) => filterPerson === "all" || w.addedBy === filterPerson);
   const grid = document.getElementById("wishGrid");
   const empty = document.getElementById("emptyMsg");
   if (list.length === 0) {
@@ -941,6 +967,8 @@ document.getElementById("addBtn").onclick = () => {
 document.getElementById("saveWishBtn").onclick = submitWish;
 document.getElementById("filterOpen").onclick = () => { filter = "open"; render(); };
 document.getElementById("filterDone").onclick = () => { filter = "done"; render(); };
+document.getElementById("filterCatSelect").onchange = e => { filterCat = e.target.value; render(); };
+document.getElementById("filterPersonSelect").onchange = e => { filterPerson = e.target.value; render(); };
 document.querySelectorAll(".tab").forEach(tab => tab.onclick = () => {
   curTab = tab.dataset.tab;
   document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
